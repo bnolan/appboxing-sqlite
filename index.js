@@ -18,39 +18,45 @@ wss.on('connection', (ws) => {
   // you might use location.query.access_token to authenticate or share sessions 
   // or ws.upgradeReq.headers.cookie (see http://stackoverflow.com/a/16395220/151312) 
 
-  ws.on('message', (message) => {
-    console.log('received: %s', message);
+  // todo - send hello message?
 
-    const packet = JSON.parse(message);
-    var callback = () => {};
+  db.serialize(() => {
+    ws.on('message', (message) => {
+      console.log('received: %s', message);
 
-    if (packet.callback === true) {
-      // nb: Callback can trigger multiple times (in an each for example)
-      callback = (err, row) => {
-        ws.send(JSON.stringify({
-          id: packet.id,
-          err: err,
-          row: row
-        }));
-      };
-    }
+      const packet = JSON.parse(message);
+      var callback = () => {};
 
-    if (packet.command === 'run') {
+      if (packet.callback === true) {
+        // nb: Callback can trigger multiple times (in an each for example)
+        callback = (err, row) => {
+          ws.send(JSON.stringify({
+            id: packet.id,
+            err: err,
+            row: row
+          }));
+        };
+      }
+
       const query = packet.query;
 
-      if (typeof query === 'string') {
-        db.run(query, [], callback);
-      } else {
-        db.run(query.query, query.arguments, callback);
+      if (packet.command === 'run') {
+        if (typeof query === 'string') {
+          db.run(query, [], callback);
+        } else {
+          db.run(query.query, query.arguments, callback);
+        }
       }
-    }
 
-    if (packet.command === 'each') {
-      db.each(packet.query, [], callback);
-    }
+      if (packet.command === 'each') {
+        if (typeof query === 'string') {
+          db.each(query, [], callback);
+        } else {
+          db.each(query.query, query.arguments, callback);
+        }
+      }
+    });
   });
-
-  ws.send('something');
 });
 
 server.on('request', app);
