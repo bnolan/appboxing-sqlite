@@ -70,12 +70,12 @@ class WebsocketClient extends EventEmitter {
   }
 
   send (data, options, cb) {
-    console.log('sending..');
     this._sender.send(data, options, cb);
   }
 
   close () {
-    throw 'not implemented #close';
+    this.socket.destroy();
+    this.emit('closed');
   }
 
   pong (data, options) {

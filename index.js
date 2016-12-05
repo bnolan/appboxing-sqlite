@@ -9,44 +9,21 @@ const sqlite3 = require('sqlite3').verbose();
 const eshttp = require('eshttp');
 
 const server = new eshttp.HttpServer();
-const response = new eshttp.HttpResponse(200, { 'x-header': 'value' }, 'hello');
 const handleUpgrade = require('./node-ws');
 
 server.onrequest = (request) => {
   if (request.headers.get('upgrade') === 'websocket') {
-    request.isComplete = () => {
-      // Tell eshttp not to close the connection
-      return false;
-    };
-
-    const ws = handleUpgrade(request, request._connection._socket);
-
-    ws.on('message', (message) => {
-      console.log('#message');
-      console.log(message);
-
-      ws.send(JSON.stringify({beep: 'boop'}));
-    });
+    serveWebsocket(request);
   }
-  // request.respondWith(response);
 };
 
-server.listen(PORT);
+function serveWebsocket (request) {
+  request.isComplete = () => {
+    // Tell eshttp not to close the connection
+    return false;
+  };
 
-console.log('Listening on ' + PORT);
-
-/*
-
-app.use(function (req, res) {
-  res.send({ msg: 'hello' });
-});
-
-wss.on('connection', (ws) => {
-  // var location = url.parse(ws.upgradeReq.url, true);
-  // you might use location.query.access_token to authenticate or share sessions
-  // or ws.upgradeReq.headers.cookie (see http://stackoverflow.com/a/16395220/151312)
-
-  // todo - send hello message?
+  const ws = handleUpgrade(request, request._connection._socket);
 
   var db = null;
   var databaseConnected = false;
@@ -111,12 +88,7 @@ wss.on('connection', (ws) => {
       db.each(query.query, query.arguments, callback);
     }
   }
-});
+}
 
-server.on('request', app);
-
-server.listen(port, () => { 
-  console.log('Listening on ' + server.address().port); 
-});
-
-*/
+server.listen(4100);
+console.log('Listening on ' + PORT);
